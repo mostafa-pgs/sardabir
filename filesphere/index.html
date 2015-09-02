@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Filesphere</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="dist/css/style.css" rel="stylesheet">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:700,300,400,600' rel='stylesheet' type='text/css'>
+  </head>
+
+  <body>
+    <div id="wrapper">
+      <div class="top-header fixed">
+        <div class="inside">
+          <div id="logo">
+            <!-- Tablet/Mobile -->
+            <span id="nav-btn-holder" class="omedia">
+              <button id="nav-btn"></button>
+            </span>
+            <!-- // -->
+            <a href="#home" class="bold-text theme-blue">FileSphere</a>
+          </div>
+          <div id="srch-box">
+            <div class="inside-box">
+              <form>
+                <input class="search-input" id="s1" placeholder="What are you looking for?" />
+                <button id="srch-down">&nbsp;</button>     
+                <ul class="search-options">
+                  <li>Option 1</li>
+                  <li>Option 2</li>
+                </ul>                 
+                <input type="submit" value="" id="srch-submit" />
+              </form>
+            </div>
+          </div>
+          <!-- Tablet/Mobile -->
+          <div id="mobSrch">
+            <div class="ur">
+              <button class="bk"><img src="images/back.png"></button>
+              <form>
+                <input class="search-input" id="s2" placeholder="What are you looking for?" />             
+                <input type="submit" value="" id="srch-submit" />
+              </form>
+            </div>
+          </div>
+          <span id="search-inplace" class="omedia">
+            <button id="srch-inp-btn"></button>
+            <span class="splitter"></span>
+          </span>
+          <!-- // -->          
+          <div class="user-login expand-container">
+            <img src="images/user.png" alt="Dear User" />
+            <div class="expand">
+              <p class="right-icon down">jhon.smith@gmail.com</p>
+            </div>
+            <div id="user-context">
+              <ul class="context-menu">
+                <div id="user-info">
+                  <p class="inside-username">jhon.smith@gmail.com</p>
+                  <div class="file-count">23,000 files in total</div>
+                  <div class="used">635 MB of 16 GB used</div>
+                  <div class="progress">
+                    <div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 40%;">
+                      <span class="sr-only">40% Complete</span>
+                   </div>
+                  </div>
+                </div>
+                <li style="margin-bottom:3px;">
+                  <img src="images/gear.png"><a href="#/user/setting">Settings</a>
+                </li>
+                <li><img src="images/logout.png"><a href="#/user/logout">Logout</a></li>
+              </ul>
+            </div>            
+          </div>
+        </div>
+      </div>
+      <div class="container inside">
+        <div id="right-side">
+          <div class="fixed" id="nav">
+            <div id="top">
+              <div class="controls">
+                <a href="#f" data-toggle="modal" data-target="#preview">
+                  <button class="control details-pane" id="details-btn">&nbsp;</button>
+                </a>
+                <span class="control-box">
+                  <button class="control view-control enable left" id="row-view-btn">&nbsp;</button>
+                  <button class="control view-control right" id="grid-view-btn">&nbsp;</button>
+                </span>
+                <button class="control upload" id="upload-btn">Upload</button>
+              </div>
+              <div class="path">
+                <ul>
+                  <li><a href="#/ad">Documents</a></li>
+                  <li class="active"><a href="#/ad"></a></li>
+                </ul>
+              </div>
+              <div class="menu">
+                <ul>
+                  <li><img src="images/open.png"><a class="menu-link id-open" href="#a">Open</a></li>
+                  <li><img src="images/share.png"><a class="menu-link id-share" href="#a">Share</a></li>
+                  <li><img src="images/download.png"><a class="menu-link id-download" href="#a">Download</a></li>
+                  <li class="more">More
+                    <ul class="context-menu">
+                      <div class="context-group first">
+                        <li>
+                          <img src="images/fin.png">
+                          <a href="#f" data-toggle="modal" data-target="#finalise">Finalise</a>
+                        </li>
+                        <li><img src="images/lock.png"><a href="#f">Lock</a></li>
+                      </div>
+                      <div class="context-group">
+                        <li><img src="images/shred.png"><a href="#f">Shred</a></li>
+                      </div>
+                      <div class="context-group">
+                        <li>
+                          <img src="images/send.png">
+                          <a href="#f" data-toggle="modal" data-target="#sendt">Send to Template</a>
+                        </li>
+                        <li><img src="images/return.png"><a href="#f">Return</a></li>
+                        <li><img src="images/undo.png"><a href="#f">Undo Checkout</a></li>
+                      </div>
+                      <div class="context-group last">
+                        <li><img src="images/prop.png"><a href="#f" class="prop-dialog">Properties</a></li>
+                      </div>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div class="table-header">
+              <div class="thr name"><span>Name</span></div>
+              <div class="thr type has-option"><span>Type</span>
+                <ul class="options">
+                  <li class=""><a href="#s">Statuses</a></li>
+                  <li class=""><a href="#s">Size</a></li>
+                  <li class="active"><a href="#s">Type</a></li>
+                  <li class=""><a href="#s">Year</a></li>
+                </ul>
+              </div>
+              <div class="thr mod has-option"><span>Modified</span>
+                <ul class="options">
+                  <li class="active"><a href="#s">Modified</a></li>
+                  <li class=""><a href="#s">Last Edited By</a></li>
+                </ul>
+              </div>
+              <!--<div class="thr dets"><button><img src="images/dots.png"></button></div>-->
+            </div>            
+          </div>
+            <div id="files">
+                <ul>
+                  <li class="file-row first" data-fid="54">
+                    <div class="tdr name">
+                      <span class="sel status"><img src="images/st2.png"></span>
+                      <span class="file-icon"><img src="images/folder.png"></span>
+                      <span class="filename">Documents</span>
+                    </div>
+                    <div class="tdr type">Folder</div>
+                    <div class="tdr mod">12/6/2014 1:23 AM</div>
+                    <div class="tdr dets"><button class="faved"><img src="images/fstar.png"></button></div>
+                    <div class="tdr mob"><button><img src="images/mob.png"></button></div>
+                  </li> 
+                  <li class="file-row" data-fid="23">
+                    <div class="tdr name">
+                      <span class="sel status"><img src="images/st1.png"></span>
+                      <span class="file-icon"><img src="images/folder.png"></span>
+                      <span class="filename">Projexts</span>
+                    </div>
+                    <div class="tdr type">Folder</div>
+                    <div class="tdr mod">12/6/2014 1:23 PM</div>
+                    <div class="tdr dets"><button class="notfaved"><img src="images/star.png"></button></div>    
+                    <div class="tdr mob"><button><img src="images/mob.png"></button></div>            
+                  </li>                                    
+                  <li class="file-row" data-fid="1">
+                    <div class="tdr name">
+                      <span class="sel status"><img src="images/st1.png"></span>
+                      <span class="file-icon"><img src="images/pdf.png"></span>
+                      <span class="filename">Zend Framework 2.pdf <span class="fv">(v3.1)</span></span>
+                    </div>
+                    <div class="tdr type">PDF</div>
+                    <div class="tdr mod">12/6/2014 1:23 PM</div>
+                    <div class="tdr dets"><button class="notfaved"><img src="images/star.png"></button></div>  
+                    <div class="tdr mob"><button><img src="images/mob.png"></button></div>              
+                  </li>
+                  <li class="file-row" data-fid="2">
+                    <div class="tdr name">
+                      <span class="sel status"><img src="images/st1.png"></span>
+                      <span class="file-icon"><img src="images/bu.png"></span>
+                      <span class="filename">Beautifull.jpeg<span class="fv">(v3.1)</span></span>
+                    </div>
+                    <div class="tdr type">Image</div>
+                    <div class="tdr mod">22/9/2014 5:43 PM</div>
+                    <div class="tdr dets"><button class="faved"><img src="images/fstar.png"></button></div>
+                    <div class="tdr mob"><button><img src="images/mob.png"></button></div>                
+                  </li>               
+                  <li class="file-row" data-fid="6">
+                    <div class="tdr name">
+                      <span class="sel status"><img src="images/st3.png"></span>
+                      <span class="file-icon"><img src="images/word.png"></span>
+                      <span class="filename">Document.docx<span class="fv">(v2.1)</span></span>
+                    </div>
+                    <div class="tdr type">Doc</div>
+                    <div class="tdr mod">12/6/2014 1:23 AM</div>
+                    <div class="tdr dets"><button class="faved"><img src="images/fstar.png"></button></div>
+                    <div class="tdr mob"><button><img src="images/mob.png"></button></div>                
+                  </li>
+                  <li class="file-row" data-fid="10">
+                    <div class="tdr name">
+                      <span class="sel status"><img src="images/st2.png"></span>
+                      <span class="file-icon"><img src="images/must.png"></span>
+                      <span class="filename">MustSeeIran.jpeg<span class="fv">(v1.1)</span></span>
+                    </div>
+                    <div class="tdr type">Image</div>
+                    <div class="tdr mod">12/6/2014 6:23 PM</div>
+                    <div class="tdr dets"><button class="notfaved"><img src="images/star.png"></button></div>
+                    <div class="tdr mob"><button><img src="images/mob.png"></button></div>                
+                  </li>
+                  <li class="file-row" data-fid="18">
+                    <div class="tdr name">
+                      <span class="sel status"><img src="images/st1.png"></span>
+                      <span class="file-icon"><img src="images/zip.png"></span>
+                      <span class="filename">Zend Framework 2.pdf<span class="fv">(v2.0)</span></span>
+                    </div>
+                    <div class="tdr type">PDF</div>
+                    <div class="tdr mod">12/6/2014 1:23 PM</div>
+                    <div class="tdr dets"><button class="notfaved"><img src="images/star.png"></button></div> 
+                    <div class="tdr mob"><button><img src="images/mob.png"></button></div>               
+                  </li>
+                  <li class="file-row" data-fid="78">
+                    <div class="tdr name">
+                      <span class="sel status"><img src="images/st2.png"></span>
+                      <span class="file-icon"><img src="images/must.png"></span>
+                      <span class="filename">MustSeeIran.jpeg<span class="fv">(v1.1)</span></span>
+                    </div>
+                    <div class="tdr type">Image</div>
+                    <div class="tdr mod">12/6/2014 6:23 PM</div>
+                    <div class="tdr dets"><button class="notfaved"><img src="images/star.png"></button></div> 
+                    <div class="tdr mob"><button><img src="images/mob.png"></button></div>               
+                  </li>
+                  <li class="file-row" data-fid="13">
+                    <div class="tdr name">
+                      <span class="sel status"><img src="images/st1.png"></span>
+                      <span class="file-icon"><img src="images/zip.png"></span>
+                      <span class="filename">Zend Framework 2.pdf<span class="fv">(v2.0)</span></span>
+                    </div>
+                    <div class="tdr type">PDF</div>
+                    <div class="tdr mod">12/6/2014 1:23 PM</div>
+                    <div class="tdr dets"><button class="notfaved"><img src="images/star.png"></button></div>    
+                    <div class="tdr mob"><button><img src="images/mob.png"></button></div>            
+                  </li>                  
+                  <li class="file-row" data-fid="33">
+                    <div class="tdr name">
+                      <span class="sel status"><img src="images/st3.png"></span>
+                      <span class="file-icon"><img src="images/bu.png"></span>
+                      <span class="filename">MustSeeIran.jpeg<span class="fv">(v4.1)</span></span>
+                    </div>
+                    <div class="tdr type">Image</div>
+                    <div class="tdr mod">12/6/2014 6:23 PM</div>
+                    <div class="tdr dets"><button class="notfaved"><img src="images/star.png"></button></div>   
+                    <div class="tdr mob"><button><img src="images/mob.png"></button></div>             
+                  </li>             
+                  <li class="file-row last" data-fid="153">
+                    <div class="tdr name">
+                      <span class="sel status"><img src="images/st3.png"></span>
+                      <span class="file-icon"><img src="images/bu.png"></span>
+                      <span class="filename">Beautifull.jpeg<span class="fv">(v3.1)</span></span>
+                    </div>
+                    <div class="tdr type">Image</div>
+                    <div class="tdr mod">22/9/2014 5:43 PM</div>
+                    <div class="tdr dets"><button class="faved"><img src="images/fstar.png"></button></div>
+                    <div class="tdr mob"><button><img src="images/mob.png"></button></div>                
+                  </li>                                                        
+                </ul>
+            </div> <!-- end of #files -->
+            <div id="grid-files">
+              <div class="grid-item" data-fid="343">
+                <ul>
+                  <li class="grid-file-img"><img src="images/folder.png"></li>
+                  <li class="grid-details-holder">
+                    <div>
+                      <span class="fn">Untitle Folder</span>
+                      <span class="fs"><img src="images/bdot.png"></span>
+                    </div>
+                    <div class="modifydate">Modified 02/03/2014</div>
+                  </li>
+                </ul>
+              </div>               
+              <div class="grid-item" data-fid="14">
+                <ul>
+                  <li class="grid-file-img"><img src="images/folder.png"></li>
+                  <li class="grid-details-holder">
+                    <div>
+                      <span class="fn">Untitle Folder</span>
+                      <span class="fs"><img src="images/bdot.png"></span>
+                    </div>
+                    <div class="modifydate">Modified 02/03/2014</div>
+                  </li>
+                </ul>
+              </div>
+              <div class="grid-item" data-fid="234">
+                <ul>
+                  <li class="grid-file-img"><img src="images/ax1.png"></li>
+                  <li class="grid-details-holder">
+                    <div>
+                      <span class="fn">Roxana.jpeg</span>
+                      <span class="fv">(ver 3.1)</span>
+                    </div>
+                    <div class="modifydate">Modified 02/03/2014</div>
+                  </li>
+                </ul>
+              </div> 
+              <div class="grid-item" data-fid="182">
+                <ul>
+                  <li class="grid-file-img"><img src="images/word.png"></li>
+                  <li class="grid-details-holder">
+                    <div>
+                      <span class="fn">article.docx</span>
+                      <span class="fv">(ver 3.1)</span>
+                      <span class="fs"><img src="images/bdot.png"></span>
+                    </div>
+                    <div class="modifydate">Modified 02/03/2014</div>
+                  </li>
+                </ul>
+              </div>
+              <div class="grid-item" data-fid="122">
+                <ul>
+                  <li class="grid-file-img"><img src="images/ax1.png"></li>
+                  <li class="grid-details-holder">
+                    <div>
+                      <span class="fn">picture.jpg</span>
+                      <span class="fv">(ver 3.1)</span>
+                    </div>
+                    <div class="modifydate">Modified 02/03/2014</div>
+                  </li>
+                </ul>
+              </div>
+              <div class="grid-item" data-fid="134">
+                <ul>
+                  <li class="grid-file-img"><img src="images/music.png"></li>
+                  <li class="grid-details-holder">
+                    <div>
+                      <span class="fn">Happy.mp3</span>
+                      <span class="fv">(ver 3.1)</span>
+                      <span class="fs"><img src="images/bdot.png"></span>
+                    </div>
+                    <div class="modifydate">Modified 02/03/2014</div>
+                  </li>
+                </ul>
+              </div>  
+              <div class="grid-item" data-fid="133">
+                <ul>
+                  <li class="grid-file-img"><img src="images/zip.png"></li>
+                  <li class="grid-details-holder">
+                    <div>
+                      <span class="fn">css.zip</span>
+                      <span class="fv">(ver 3.1)</span>
+                    </div>
+                    <div class="modifydate">Modified 02/03/2014</div>
+                  </li>
+                </ul>
+              </div>  
+              <div class="grid-item" data-fid="111">
+                <ul>
+                  <li class="grid-file-img"><img src="images/pdf.png"></li>
+                  <li class="grid-details-holder">
+                    <div>
+                      <span class="fn">document.pdf</span>
+                      <span class="fv">(ver 3.1)</span>
+                      <span class="fs"><img src="images/bdot.png"></span>
+                    </div>
+                    <div class="modifydate">Modified 02/03/2014</div>
+                  </li>
+                </ul>
+              </div>                                                     
+            </div> <!-- end of #grid-files -->
+            <div id="nofiles">
+              <p>No File Or Folder</p>
+            </div>
+        </div> 
+        <div id="left-side" class="fixed">
+          <div id="spaces" class="side-block block">
+            <h3 class="block-header"><span>Spaces</span></h3>
+            <ul class="slide">
+              <li class="selected"><img src="images/doc.png"><a id="doc" href="#/documents">Documents</a></li>
+              <li><img src="images/wsp.png"><a id="wsp" href="#/documents">My Workspace</a></li>
+              <li><img src="images/fav.png"><a id="fav" href="#/documents">Favorites</a></li>
+              <div class="extra-div">
+                <li class="in-more"><img src="images/tryin.png"><a id="tin" href="#/docu">In Tray</a></li>
+                <li class="in-more"><img src="images/tryout.png"><a id="tout" href="#/nts">Out Tray</a></li>
+                <li class="in-more"><img src="images/trash.png"><a id="tr" href="#/docu">Shredder</a></li>
+                <li class="in-more"><img src="images/daf.png"><a id="tem" href="#/nts">Templates</a></li>
+              </div>
+              <li class="more">More</li>
+            </ul>
+          </div>
+          <div id="filters" class="side-block block">
+            <h3 class="block-header">
+              <span>Filter by</span>
+              <div class="block-prefs">
+                <button class="btn-act clear">Clear all</button>
+                <button class="sm-btn min"></button>
+              </div>
+            </h3>
+            <div class="block-wrapper">
+              <div class="filter-group min">
+                <h2 class="filter-title ">Year</h2>
+                  <ul>
+                    <li>
+                      <label>
+                        <input value="2012" type="checkbox" class="filter-item filter-check">2012
+                      </label>
+                    </li>
+                    <li>
+                      <label>
+                        <input value="2013" type="checkbox" class="filter-item filter-check">2013
+                      </label>
+                    </li>
+                    <li>
+                      <label>
+                        <input value="2015" type="checkbox" class="filter-item filter-check">2016
+                      </label>
+                    </li>
+                    <li>
+                      <label>
+                        <input value="2018" type="checkbox" class="filter-item filter-check">2019
+                      </label>
+                    </li>                                        
+                  </ul>
+              </div>
+              <div class="filter-group min">
+                <h2 class="filter-title">Subject</h2>
+                  <ul>
+                    <li>
+                      <label>
+                        <input value="0" type="checkbox" class="filter-item filter-check">Historical
+                      </label>
+                    </li>
+                    <li>
+                      <label>
+                        <input value="1" type="checkbox" class="filter-item filter-check">#social
+                      </label>
+                    </li>
+                  </ul>
+              </div>
+              <div class="filter-group min">
+                <h2 class="filter-title">Type</h2>
+                  <ul>
+                    <li>
+                      <label>
+                        <input value="txt" type="checkbox" class="filter-item filter-check">Text
+                      </label>
+                    </li>
+                    <li>
+                      <label>
+                        <input value="pdf" type="checkbox" class="filter-item filter-check">PDF
+                      </label>
+                    </li>
+                  </ul>
+              </div>
+              <div class="filter-group min">
+                <h2 class="filter-title">Author</h2>
+                  <ul>
+                    <li>
+                      <label>
+                        <input value="2012" type="checkbox" class="filter-item filter-check">David
+                      </label>
+                    </li>
+                    <li>
+                      <label>
+                        <input value="2013" type="checkbox" class="filter-item filter-check">Jabran
+                      </label>
+                    </li>
+                  </ul>
+              </div>
+              <div class="filter-group last min">
+                <h2 class="filter-title">Group</h2>
+                  <ul>
+                    <li>
+                      <label>
+                        <input value="2012" type="checkbox" class="filter-item filter-check">Filesphere
+                      </label>
+                    </li>
+                    <li>
+                      <label>
+                        <input value="2013" type="checkbox" class="filter-item filter-check">CDT
+                      </label>
+                    </li>
+                  </ul>
+              </div> 
+            </div>             
+          </div>
+          <div id="copyright" class="side-block block">
+            <p class="copy-info">Copyright &copy; Filesphere Pty Limited</p>
+            <div class="links">
+              <ul>
+                <li><a href="#/About">About</a></li>
+                <li><a href="#/Help">Help</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div><!-- /.container -->
+    </div>
+    <div id="preview" class="modal fade">
+      <div class="modal-dialog">
+      <div class="modal-content">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
+            <li class="active"><a href="#prop" data-toggle="tab">Properties</a></li>
+            <li><a href="#history" data-toggle="tab">History</a></li>
+            <li><a href="#versions" data-toggle="tab">Versions</a></li>
+        </ul>
+        <div id="my-tab-content" class="tab-content">
+            <div class="tab-pane active" id="prop">
+                <div class="pane-box">
+                  <img class="pr" src="images/bu.png">
+                  <p class="pf">MustSeeIran.png <br/><span class="fv">(v3.1)</span></p>
+                </div>
+                <div class="pane-box">
+                  <h1>Common</h1>
+                  <label>Title : <span class="det">Sfssdsds</span></label>
+                  <label>Subject : <span class="det">fdfdcxx</span></label>
+                  <label>Category : <span class="det">tbrvdcsd</span></label>
+                  <label>Keywords : <span class="det">adwdw, adada</span></label>
+                </div>
+                <div class="pane-box">
+                  <h1>Images</h1>
+                  <label>Title : <span class="det">faaf</span></label>
+                  <label>Subject : <span class="det">frfrf</span></label>
+                  <label>Category : <span class="det">vdsdsd</span></label>
+                  <label>Keywords : <span class="det">sdsdsd</span></label>
+                </div> 
+                <div class="cn">all data is list structure</div>                   
+            </div>
+            <div class="tab-pane" id="history">
+                <div class="pane-box">
+                  <h1>Last Versions</h1>
+                  <label>Title : <span class="det">Sfssdsds</span></label>
+                  <label>Subject : <span class="det">fdfdcxx</span></label>
+                  <label>Category : <span class="det">tbrvdcsd</span></label>
+                  <label>Keywords : <span class="det">adwdw, adada</span></label>
+                </div>
+            </div>
+            <div class="tab-pane" id="versions">
+                <div class="pane-box">
+                    <div class="version-item">
+                      <span class="sel status"><img src="images/st1.png"></span>
+                      <span class="file-icon"><img src="images/pdf.png"></span>
+                      <span class="filename">Zend Framework 2.pdf</span>                        
+                      <span class="fv float-right">(v3.1)</span>
+                    </div>
+                    <div class="version-item">
+                      <span class="sel status"><img src="images/st1.png"></span>
+                      <span class="file-icon"><img src="images/pdf.png"></span>
+                      <span class="filename">Zend Framework 2.pdf</span>                        
+                      <span class="fv float-right">(v3.1)</span>
+                    </div>
+                    <div class="version-item">
+                      <span class="sel status"><img src="images/st1.png"></span>
+                      <span class="file-icon"><img src="images/pdf.png"></span>
+                      <span class="filename">Zend Framework 2.pdf</span>                        
+                      <span class="fv float-right">(v3.1)</span>
+                    </div>
+                    <div class="version-item">
+                      <span class="sel status"><img src="images/st1.png"></span>
+                      <span class="file-icon"><img src="images/pdf.png"></span>
+                      <span class="filename">Zend Framework 2.pdf</span>                        
+                      <span class="fv float-right">(v3.1)</span>
+                    </div>                                                            
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+    </div>    
+    <div id="finalise" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h4 class="modal-title">Finilise Options</h4>
+          </div>
+          <div class="modal-body">
+            <textarea id="fin-text" placeholder="Please insert your comment..."></textarea>
+          </div>
+          <div class="modal-footer">
+            <div class="modal-opt">
+              <label><input type="checkbox">Remove minor versions after finalising</label>
+              <label>
+                <input type="checkbox">Document must expire at: <input value="N/A" type="text" />
+                <button class="cal">&nbsp;</button>
+              </label>
+              <button type="button" class="btn btn-close" data-dismiss="modal" aria-hidden="true">Cancel</button> 
+              <button type="button" class="btn btn-primary">Finalise</button>                           
+            </div>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->   
+    <div id="sendt" class="modal fade">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h4 class="modal-title">Send to user</h4>
+          </div>
+          <div class="modal-body">
+            <p>You are sending <span class="soj">Mensa.xls</span> to:</p>
+            <table>
+              <tr>
+                <td><label>User : </label></td>
+                <td><input type="text" id="user-send" /></td>
+              </tr>
+              <tr>
+                <td><label>Commnet: </label></td>
+                <td><textarea id="comment-send"></textarea></td>
+              </tr>
+            </table>
+          </div>
+          <div class="modal-footer">
+            <div class="modal-opt">
+              <label><input type="checkbox">Remove minor version after finalise</label>
+            </div>
+            <button type="button" class="btn btn-primary">Send</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal --> 
+    <ul id="custom-right-menu">
+      <div class="context-group">
+          <li><img src="images/open.png"><a class="menu-link id-open" href="#a">Open</a></li>
+          <li><img src="images/share.png"><a class="menu-link id-share" href="#a">Share</a></li>
+          <li><img src="images/download.png"><a class="menu-link id-download" href="#a">Download</a>        
+      </div>
+      
+      <div class="context-group">
+        <li>
+          <img src="images/fin.png">
+          <a href="#f" data-toggle="modal" data-target="#finalise">Finalise</a>
+        </li>
+        <li><img src="images/lock.png"><a href="#f">Lock</a></li>
+      </div>
+      <div class="context-group">
+        <li><img src="images/shred.png"><a href="#f">Shred</a></li>
+      </div>
+      <div class="context-group">
+        <li>
+          <img src="images/send.png">
+          <a href="#f" data-toggle="modal" data-target="#sendt">Send to Template</a>
+        </li>
+        <li><img src="images/return.png"><a href="#f">Return</a></li>
+        <li><img src="images/undo.png"><a href="#f">Undo Checkout</a></li>
+      </div>
+      <div class="context-group last">
+        <li><img src="images/prop.png"><a href="#f" class="prop-dialog">Properties</a></li>
+      </div>
+    </ul>
+    <!-- Mobile -->
+    <div id="sideBarMenu">
+      <div class="h"></div>
+    </div>
+    <div id="mobileMenu">
+      <div class="hk"></div>
+    </div>
+
+    <!-- //MbOK// -->
+  <script src="dist/js/jquery.min.js"></script>
+  <script src="dist/js/script.js"></script>
+  <script src="dist/js/resp.js"></script> 
+  <script type="text/javascript" src="dist/js/bootstrap.js"></script>
+  <script type="text/javascript" src="dist/js/enscroll-0.6.0.min.js"></script>
+  </body>
+</html>

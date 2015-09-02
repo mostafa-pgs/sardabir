@@ -1,0 +1,878 @@
+<?php
+function _isotope_add_crypt_class()
+{
+  $tr_lib_path = function_exists('libraries_get_path') ? libraries_get_path('crypt') : 'sites/all/libraries/crypt';
+  $tr_platform = $tr_lib_path . '/Crypt.php';
+  try {
+    if (!class_exists('Crypt') && !@include($tr_platform)) {
+      //show error
+      print '<br />error loading Crypt CLASS';
+      return false;
+    }
+    $crypt = new Crypt();
+    return $crypt;
+  }
+  catch (Exception $e) {print_r($e);}
+}
+
+function isotope_crypt()
+{
+	$str = $_POST['username'].'~*~'.$_POST['pass'];
+	$crypt = _isotope_add_crypt_class();
+	return $crypt->encrypt($str);
+}
+
+function isotope_access_control()
+{
+	$uid = _isotope_val('uid', false);
+	if ($uid && is_numeric($uid)) {
+		return true;
+	}
+	return false;
+}
+
+function _isotope_val($key,$default = false)
+{
+	if ($key  == '') {
+		return $default;
+	}
+
+	$result = isset($_POST[$key]) ? $_POST[$key] : $default;
+	if (!$result || $result == $default) {
+		$result = isset($_GET[$key]) ? $_GET[$key] : $default;
+	}
+
+	if ($key == 'uid') {
+		$mod = isset($_POST['mod']) ? $_POST['mod'] : false;
+		if (!$mod) {
+			return $default;
+		} else {
+			$crypt = _isotope_add_crypt_class();
+			$user_login_details = $crypt->decrypt($mod);
+			$user_login_parts = explode("~*~", $user_login_details);
+			$username = $user_login_parts[0];
+			$pass = $user_login_parts[1];
+			$account = isotope_login_user($username, $pass);
+			if ($account) {
+				return $account['uid'];
+			}
+			return $default;
+		}
+	}
+
+	return $result;
+}
+
+function isotope_login_user($username = false, $pass = false)
+{
+	if (!$username) {
+		$username = _isotope_val('username',false);
+	}
+
+	if (!$pass) {
+		$pass = _isotope_val('pass',false);
+	}
+
+	if ($username == false || $pass == false) {
+		return false;
+	}
+
+	$account = FALSE;
+	if ($uid = user_authenticate($username, $pass)) {
+		$account = user_load($uid);
+		if ($account) {
+			$account = _isotope_profile($account);
+		}
+	}
+	return $account;
+}
+
+function isotope_get_feed($current_uid = false, $tid = false, $page = 0, $timeline = false)
+{
+	if (!$current_uid) {
+		$current_uid = _isotope_val('uid', 1);
+	}
+
+	if (!$tid) {
+		$tid = _isotope_val('tid', false);
+	}	
+
+	if ($tid && is_numeric($tid)) {
+		flag('flag', 'taxonomy_views', $tid, user_load($current_uid), false); 
+	}
+
+	if (!$timeline) {
+		$timeline = _isotope_val('timeline', false);
+	}	
+
+	if (!$page) {
+		$page = _isotope_val('page', 0);
+	}	
+	$count = 5;
+	$start = $page * $count;
+
+	if ($timeline == false) {
+		/*$sql = "SELECT n.nid,uid,created as timestamp FROM node as n WHERE type = 'blog_post' and nid IN (SELECT nid FROM node_subject_index WHERE tid IN (SELECT entity_id from flagging where fid = 3 and uid = $current_uid)) ORDER BY timestamp DESC LIMIT $start,$count";*/
+		/*$sql = "SELECT * from node as n Where n.nid IN (SELECT nid from node_subject_index as t RIGHT JOIN flagging as f ON (f.entity_id = t.tid and f.fid = 3 and f.uid = $current_uid)) and n.type='blog_post' ORDER BY created DESC LIMIT $start,$count";*/
+		$sql = "SELECT DISTINCT n.nid,n.uid,f.uid as f_uid,created as timestamp FROM node as n INNER JOIN node_subject_index t ON(n.nid = t.nid) INNER JOIN flagging f ON (f.entity_id = t.tid) WHERE f.fid = 3 and f.uid = $current_uid and n.type='blog_post' ORDER BY created DESC LIMIT $start,$count";
+	} else {
+		$sql = "SELECT DISTINCT entity_id as nid, uid, timestamp from flagging where fid = 4 and uid IN (SELECT entity_id from flagging where fid = 5 and uid = $current_uid) ORDER BY timestamp DESC LIMIT $start,$count";
+	}
+
+	if ($tid && is_numeric($tid)) {
+		/*$sql = "SELECT n.nid,uid,created as timestamp FROM node as n WHERE type = 'blog_post' and nid IN (SELECT nid FROM node_subject_index WHERE tid = $tid) ORDER BY timestamp DESC LIMIT $start,$count";*/
+		$sql = "SELECT DISTINCT * from node as n LEFT JOIN node_subject_index as t ON n.nid = t.nid WHERE t.tid=$tid and n.type='blog_post' order by created DESC LIMIT $start,$count";
+	}
+
+	$start = microtime(true);
+	$result = db_query($sql);
+	$time_elapsed_secs = microtime(true) - $start;
+
+	watchdog('isotope', 'query taked '.$time_elapsed_secs.' Seconds');
+	if ($result->rowCount() > 0) {
+		$ret = array();
+		$start = microtime(true);
+		foreach ($result as $key => $record) {
+			$nid = $record->nid;
+			$uid = $record->uid;
+			$node = node_load($nid);
+			if ($node->uid != $uid) {
+				$node->renewser = $uid;
+			}
+			//$start_prepare = microtime(true);
+			$ret[] = _isotope_prepare_node($node);
+			//$time_elapsed_secs_prepare = microtime(true) - $start_prepare;
+			//watchdog('isotope', 'prepare in feed takes '.$time_elapsed_secs_prepare.' Seconds');
+		}
+		$time_elapsed_secs = microtime(true) - $start;
+		watchdog('isotope', 'foreach in feed taked '.$time_elapsed_secs.' Seconds');
+		return $ret;
+	}
+	return false;
+}
+
+function isotope_get_user_main_subjects($uid)
+{
+	if(is_numeric($uid))
+	{
+		$sql = "Select entity_id from flagging where entity_type='taxonomy_term' and uid = ".$uid;
+		$result = db_query($sql);
+		if($result->rowCount()>0)
+		{
+			$ret = array();
+			foreach ($result as $value) {
+				$ret[] = $value->entity_id;
+			}
+			return $ret;
+		}
+		return array();
+	}
+}
+
+function isotope_get_all_subjects()
+{
+	$vocabulary = taxonomy_vocabulary_machine_name_load('blog_subjects');
+	$subjects = taxonomy_get_tree($vocabulary->vid);
+	$ret = array();
+	foreach ($subjects as $key => $subject) {
+		$sub   = taxonomy_term_load($subject->tid);
+		$ret[] = _isotope_prepare_subject($sub);
+	}
+	return $ret;
+}
+
+function toSend_structure($node,$blog,$subject,$image = '')
+{
+	preg_match('/^([^.!?]*[\.!?]+){0,3}/', strip_tags($node->body['und'][0]['summary']), $abstract);
+	$body = $abstract[0]."";
+	$result = array(
+		'nid' => $node->nid,
+		'title' => $node->title,
+		'body' => $body,
+		'link' => $node->field_blog_post_link['und'][0]['value']."",
+		'date_create' => $node->created,
+		'date_str_fa' => format_interval((time() - $node->created) , 2,'fa') .' قبل',
+		'date_str_en' => format_interval((time() - $node->created) , 2,'en') .' ago',
+		'image_url' => $image."",
+		'blog_id' => $blog->tid,
+		'blog_name' => $blog->name,
+		'blog_address' => $blog->field_blog_address['und'][0]['value']."",
+		'subject' => _isotope_prepare_subject($subject),
+		'renewser' => isset($node->renewser) ? $node->renewser."" : "",
+		'like_count' => isotope_get_flagging_count(1,'node',$node->nid),
+		'liked' => (isotope_is_flagged(1,$node->nid)) ? "yes" : "no",
+		'reposted' => (isotope_is_flagged(4,$node->nid)) ? "yes" : "no",
+		'renews_count' => isotope_get_flagging_count(4,'node',$node->nid),
+	);
+	if ($result['renewser'] != "") {
+		$result['renewser_profile'] = _isotope_profile(user_load($result['renewser']));
+	}
+	return $result;
+}
+
+function _isotope_prepare_subject($subject)
+{
+	$result = array(
+		'tid' => $subject->tid,
+		'name' => $subject->name,
+		'desc' => $subject->description."",
+		'color' => isset($subject->field_subject_color['und'][0]['value']) ? $subject->field_subject_color['und'][0]['value']."" : "",
+		'image' => str_replace('public://','/sites/default/files/',$subject->field_subject_logo['und'][0]['uri'])."",
+		'follower_count' => isotope_get_flagging_count(3,'taxonomy_term',$subject->tid)."",
+		'views' => isotope_get_flagging_count(6,'taxonomy_term',$subject->tid)."",
+		'is_followed' => (isotope_is_flagged(3,$subject->tid)) ? "yes" : "no",
+	);
+
+	// if ($result['follower_count'] > 0) {
+	// 	$result['followers'] = isotope_get_followers_profile(3, $subject->tid, 5, false);
+	// }
+
+	return $result;
+}
+
+function _isotope_prepare_node($node)
+{
+	$image = $node->field_image['und'][0]['uri'];
+	$image_size = $node->field_image['und'][0]['filesize'];
+	if(empty($image) || $image_size == 0)
+		$image = $node->field_post_imageurl['und'][0]['value'];
+	else
+	{
+		$image = str_replace('public://','/sites/default/files/',$image);
+	}
+
+	$blog = taxonomy_term_load($node->field_weblog['und'][0]['tid']);
+	$subject = taxonomy_term_load($blog->field_blog_subject['und']['0']['tid']);
+	return toSend_structure($node, $blog, $subject, $image);
+}
+
+function isotope_get_post($nid = false)
+{
+	if (!$nid) {
+		$nid = _isotope_val('nid', false);
+	}
+
+	if (!$nid || is_numeric($nid) == false) {
+		return false;
+	}
+
+	$node = node_load($nid);
+
+	return _isotope_prepare_node($node);
+}
+
+function isotope_get_posts($page = 0, $uid = false, $tid = false)
+{
+	if (!$uid) {
+		$uid = _isotope_val('uid',1);
+	}
+
+	if (!$tid) {
+		$tid = _isotope_val('tid', false);
+	}
+
+	if (!$page) {
+		$page = _isotope_val('page', 0);
+	}	
+
+	$nodes = isotope_load_nodes($page, 0, $uid, $tid);
+	$toSend = array();
+	foreach ($nodes as $key => $node) {
+		$toSend[] = _isotope_prepare_node($node);
+	}
+	return $toSend;
+}
+
+function isotope_get_guest_posts()
+{
+	return isotope_get_posts();
+}
+
+function isotope_check_user_email($email = false)
+{
+	if (!$email) {
+		$email = _isotope_val('email', false);
+	}
+
+	if ($email && isset($email)) {
+		return (user_load_by_mail($email) == null) ? 'yes' : 'no';
+	}
+	else
+		return false;
+}
+
+function _isotope_profile($account)
+{
+	global $base_url;
+	return array(
+		'username' => $account->name."",
+		'name'     => $account->field_nick_name['und'][0]['value']."",
+		'uid'      => $account->uid,
+		'login'    => $account->login,
+		'bio'      => $account->field_bio['und'][0]['value']."",
+		'image'    => str_replace('public://',$base_url.'/sites/default/files/',$account->picture->uri)."",
+		'renewser' => isset($account->renewser) ? $account->renewser."" : "",
+	);
+}
+
+function isotope_get_user_profile($uid = false)
+{
+	if (!$uid) {
+		$uid = _isotope_val('uid', false);
+	}
+
+	if (is_numeric($uid) == false || !$uid) {
+		return false;
+	} else {
+		return _isotope_profile(user_load($uid));
+	}
+}
+
+function isotope_get_user_posts($uid = false, $page = 0)
+{
+	if (!$uid) {
+		$uid = _isotope_val('uid', false);
+	}
+
+	if (!$page) {
+		$page = _isotope_val('page', 0);
+	}	
+
+	if (is_numeric($uid) == false || !$uid) {
+		return false;
+	} else {
+		$nodes = isotope_get_user_renews($page, 0, $uid);
+		$toSend = array();
+		foreach ($nodes as $key => $node) {
+			$toSend[] = _isotope_prepare_node($node);
+		}
+		return $toSend;
+	}
+}
+
+function isotope_get_flagging_count($fid = 1, $entity_type = false, $entity_id = false)
+{
+	if (!$entity_type) {
+		$entity_type = _isotope_val('entity_type', false);
+	}
+
+	if (!$entity_id) {
+		$entity_id = _isotope_val('entity_id', false);
+	}
+
+	if (!$fid) {
+		$fid = _isotope_val('fid', 1);
+	}
+
+	if (!$entity_id || !$entity_type || is_numeric($entity_id) == false) {
+		return false;
+	}
+
+	$sql = "SELECT count from flag_counts WHERE fid = $fid and entity_type='$entity_type' and entity_id = $entity_id";
+	$result = db_query($sql);
+	if($result->rowCount()>0)
+	{
+		$data = $result->fetchObject();
+		return $data->count."";
+	}	
+	return "0";
+}
+
+function isotope_get_user_followers($uid = false)
+{
+	if (!$uid) {
+		$uid = _isotope_val('uid', false);
+	}
+
+	if (is_numeric($uid) == false || !$uid) 
+		return array();	
+
+	$sql = "SELECT * FROM {users} WHERE uid in (SELECT entity_id from flagging WHERE entity_type='user' and uid = $uid ORDER BY timestamp)";
+	$result = db_query($sql);
+	if($result->rowCount()>0)
+	{
+		$ret = array();
+		foreach ($result as $user) {
+			$ret[] = _isotope_profile(user_load($user->uid));
+		}
+		return $ret;
+	}
+	return array();
+}
+
+function isotope_get_user_followings($uid = false)
+{
+	if (!$uid) {
+		$uid = _isotope_val('uid', false);
+	}
+
+	if (is_numeric($uid) == false || !$uid) 
+		return array();	
+
+	$sql = "SELECT * FROM {users} WHERE uid in (SELECT uid from flagging WHERE entity_type='user' and entity_id = $uid ORDER BY timestamp)";
+	$result = db_query($sql);
+	if($result->rowCount()>0)
+	{
+		$ret = array();
+		foreach ($result as $user) {
+			$ret[] = user_load($user->uid);
+		}
+		return $ret;
+	}
+	return array();
+}
+
+function isotope_is_flagged($fid = false, $entity_id = false, $uid = false)
+{
+	//var_dump($_POST);
+	if (!$fid) {
+		$fid = _isotope_val('fid', false);
+	}
+
+	if (!$fid) {
+		return false;
+	}
+
+	if (!$entity_id) {
+		$entity_id = _isotope_val('entity_id', false);
+	}
+
+	if (!$uid) {
+		$uid = _isotope_val('uid', false);
+	}
+
+	if (!$uid) {
+		return false;
+	}
+
+	$sql = "SELECT uid from flagging WHERE fid = $fid and entity_id = $entity_id and uid = $uid ORDER BY timestamp";
+	$result = db_query($sql);
+	if($result->rowCount()>0)
+	{
+		return true;
+	}
+	return false;
+}
+
+function isotope_get_all_weblogs_in_subject($tid)
+{
+	$tids = '';
+	if(empty($tid))
+		return array();
+	if(is_numeric($tid))
+		$tids = array($tid);
+	else
+		$tids = $tid;
+	$str_tids = "(". implode(',', $tids) .")";
+	$sql = "SELECT entity_id FROM field_data_field_blog_subject where field_blog_subject_tid IN ".$str_tids;
+	$result = db_query($sql);
+	if($result->rowCount()>0)
+	{
+		$ret = array();
+		foreach ($result as $value) {
+			# code...
+			$ret[] = $value->entity_id;
+		}
+		return $ret;
+	}
+	return array();	
+}
+
+function isotope_get_nodes_of_weblogs($tid,$page,$last)
+{
+	$start = $page * 15;
+	$tids = '';
+	if(empty($tid))
+		return array();
+	if(is_numeric($tid))
+		$tids = array($tid);
+	else
+		$tids = $tid;
+	$str_tids = "(". implode(',', $tids) .")";
+	$sql = "SELECT * FROM {node} where nid IN (Select nid from taxonomy_index where tid IN " .$str_tids .") and nid > ".$last." ORDER BY nid DESC Limit $start,15";
+	$result = db_query($sql);
+	if($result->rowCount()>0)
+	{
+		$ret = array();
+		foreach ($result as $node) {
+			$ret[$node->nid] = node_load($node->nid);
+		}
+		return $ret;
+	}
+	return array();	
+}
+
+function isotope_load_nodes($page,$last_nid,$uid,$tid = false)
+{
+	if(is_numeric($page) == false || is_numeric($last_nid) == false || is_numeric($uid) == false)
+		return array();
+	if ($tid != false && is_numeric($tid)) {
+		return isotope_get_nodes_of_weblogs($tid, $page, 0);
+	} else {
+		// Select User main subjects
+		$user_ms = isotope_get_user_main_subjects($uid);
+		// Select * weblog in this subjects
+		$weblogs = isotope_get_all_weblogs_in_subject($user_ms);
+		// Select * node related to these weblogs
+		return isotope_get_nodes_of_weblogs($weblogs, $page, $last_nid);
+	}
+}
+
+function isotope_theme_nodes($view,$page,$last_nid,$uid)
+{
+	$html = '';
+	$nodes = isotope_load_nodes($page,$last_nid,$uid);
+	foreach ($nodes as $key => $node) {
+	    $build = node_view($node, $view);
+	    $html .= drupal_render($build);
+	}
+	return $html;
+}
+/**********************************************************************************/
+function isotope_get_user_following($uid = false)
+{
+	if (!$uid) {
+		$uid = _isotope_val('uid', false);
+	}
+	if(is_numeric($uid))
+	{
+		$sql = "Select entity_id from flagging where entity_type='user' and uid = ".$uid;
+		$result = db_query($sql);
+		if($result->rowCount()>0)
+		{
+			$ret = array();
+			foreach ($result as $value) {
+				$ret[] = $value->entity_id;
+			}
+			return $ret;
+		}
+		return array();
+	}
+}
+
+function isotope_get_user_renews($page,$last_nid,$uid)
+{
+	$start = $page * 5;
+	$uids = '';
+	if(empty($uid))
+		return array();
+	if(is_numeric($uid))
+		$uids = array($uid);
+	else
+		$uids = $uid;
+	$str_uids = "(". implode(',', $uids) .")";
+	$sql = "Select Distinct node.nid,flagging.uid as uuid from node,flagging where node.nid IN (Select entity_id from flagging where entity_type='node' and uid IN ".$str_uids.") and flagging.entity_type='node' and flagging.entity_id = node.nid and flagging.uid IN $str_uids and node.nid > $last_nid ORDER BY flagging.timestamp DESC Limit $start,5";
+	$result = db_query($sql);
+	if($result->rowCount()>0)
+	{
+		$ret = array();
+		foreach ($result as $nd) {
+			$node = node_load($nd->nid);
+			$node->renewser = $nd->uuid;
+			$ret[] = $node;
+		}
+		return $ret;
+	}
+	return array();	
+}
+
+function isotope_theme_renews($page,$last_nid,$uid)
+{
+	if(is_numeric($page) == false || is_numeric($last_nid) == false || is_numeric($uid) == false)
+		return array();
+	$followings = isotope_get_user_following($uid);
+	$nodes = isotope_get_user_renews($page,$last_nid,$followings);
+	$html = '';
+	foreach ($nodes as $key => $node) {
+	    $build = node_view($node, 'renews');
+	    $html .= drupal_render($build);
+	}	
+	return $html;
+}
+function isotope_get_flag_count($type,$id)
+{
+	if(is_numeric($id) == false || $type == '')
+		return 0;
+	$sql = 'SELECT count,entity_type  FROM flag_counts WHERE entity_id = '.$id;
+	$result = db_query($sql);
+	if($result->rowCount() != 0)
+	{
+		$data = $result->fetchObject();
+		if($type == $data->entity_type)
+			return $data->count;
+	}
+	return 0;
+}
+
+function isotope_get_follower_count($type,$id)
+{
+	if(is_numeric($id) == false || $type == '')
+		return 0;
+	$sql = "SELECT COUNT(fid) AS count FROM flagging WHERE entity_type='".$type."' AND entity_id = ".$id;
+	$result = db_query($sql);
+	if($result->rowCount() != 0)
+	{
+		$data = $result->fetchObject();
+		return $data->count;
+	}
+	return 0;
+}
+
+function isotope_reset_password($email = false)
+{
+	if (!$email) {
+		$email = _isotope_val('email', false);
+	}	
+
+	if ($email == false) {
+		return false;
+	}
+
+	global $language;
+	$account = user_load_by_mail($email);
+	if ($account) {
+		// Mail one time login URL and instructions using current language.
+		$mail = _user_mail_notify('password_reset', $account, $language);
+		if (!empty($mail)) {
+			watchdog('user', 'Password reset instructions mailed to %name at %email.', array('%name' => $account->name, '%email' => $account->mail));
+			return true;
+		}
+	}
+
+	return false;
+}
+
+function isotope_toggle_follow($flag = 'flag', $entity_type = false, $entity_id = false, $uid = false)
+{
+	// var_dump($_POST);
+	if (!$entity_id) {
+		$entity_id = _isotope_val('entity_id', false);
+	}	
+
+	if (!$entity_type) {
+		$entity_type = _isotope_val('entity_type', false);
+	}		
+
+	if (!$uid) {
+		$uid = _isotope_val('uid', false);
+	}		
+
+	$flag = _isotope_val('flag', 'flag');
+	$flag_name = $entity_type; /* renews, ms, bookmarks, friend */
+
+	if (!$entity_id || !$flag_name || is_numeric($entity_id) == false || $uid == false) {
+		return false;
+	}
+	$account = user_load($uid);
+	return flag($flag, $flag_name, $entity_id, $account, false); 
+}
+
+function isotope_toggle_like()
+{
+	/* flag_name : bookmarks */
+	return isotope_toggle_follow();
+}
+
+function isotope_register_user($username = false, $mail = false, $pass = false, $status = 1)
+{
+	if (!$username) {
+		$username = _isotope_val('username', false);
+	}	
+
+	if (!$mail) {
+		$mail = _isotope_val('mail', false);
+	}
+
+	if (!$pass) {
+		$pass = _isotope_val('pass', false);
+	}	
+
+	if (!$username || !$mail || !$pass) {
+		return false;
+	}		
+
+	$password = $pass;
+	$fields = array(
+		'name' => $username,
+		'mail' => $mail,
+		'pass' => $password,
+		'status' => 1,
+		'init' => $mail,
+		'roles' => array(
+		  DRUPAL_AUTHENTICATED_RID => 'authenticated user',
+		),
+	);
+
+	//the first parameter is left blank so a new user is created
+	$account = user_save('', $fields);
+	$account->password = $fields['pass'];
+
+	// Send the e-mail through the user module.
+	drupal_mail('user', 'register_no_approval_required', $mail, NULL, array('account' => $account), variable_get('site_mail', 'noreply@example.com'));
+}
+
+function isotope_update_profile($uid = false, $username = false, $nick_name = false, $mail = false, $pass = false, $bio = false)
+{
+	if (!$uid) {
+		$uid = _isotope_val('uid', false);
+	}
+
+	if (is_numeric($uid) == false || !$uid) {
+		return false;
+	}	
+
+	$account = user_load($uid);
+
+	if ($account == false) {
+		return false;
+	}	
+
+	if (!$username) {
+		$username = _isotope_val('username', false);
+	}
+
+	if (!$nick_name) {
+		$nick_name = _isotope_val('nick_name', false);
+	}	
+
+	if (!$bio) {
+		$bio = _isotope_val('bio', false);
+	}		
+
+	if (!$mail) {
+		$mail = _isotope_val('mail', false);
+	}
+
+	if (!$pass) {
+		$pass = _isotope_val('pass', false);
+	}	
+
+	$edit = array();
+	if ($username) {
+		$account->name = $username;
+		$edit['name'] = $username;
+	}
+	if ($mail) {
+		$account->mail = $mail;
+		$edit['mail'] = $mail;
+	}
+	if ($pass) {
+		$account->pass = $pass;
+		$edit['pass'] = $pass;
+	}	
+
+	if ($nick_name) {
+		$account->field_nick_name['und'][0]['value'] = $nick_name;
+	}
+
+	if ($bio) {
+		$account->field_bio['und'][0]['value'] = $bio;
+	}
+
+	return user_save($account);
+}
+
+function isotope_userAction($uid = false)
+{
+	if (!$uid) {
+		$uid = _isotope_val('uid', false);
+	}
+
+	if (!$uid) {
+		return "false";
+	}
+
+}
+
+function isotope_get_followers_profile($fid = false, $entity_id = false, $limit = 5, $random = false)
+{
+	$sql = "SELECT uid from flagging WHERE fid = $fid and entity_id = $entity_id";
+	if ($random) {
+		$sql .= " ORDER BY RAND() LIMIT 0,$limit";
+	} else {
+		$sql .= " ORDER BY timestamp DESC LIMIT 0,$limit";
+	}
+	
+	$result = db_query($sql);
+	$ret = '';
+	if($result->rowCount() != 0)
+	{
+		foreach ($result as $key => $data) {
+			$uid = $data->uid;
+			if (is_numeric($uid)) {
+				$ret[] = _isotope_profile(user_load($uid));
+			}
+		}
+	}
+	return $ret;
+}
+
+function isotope_save_suggest($tid = false, $url = false, $desc = false, $uid = false)
+{
+	if (!$uid) {
+		$uid = _isotope_val('uid', 1);
+	}
+
+	if (!$tid) {
+		$tid = _isotope_val('tid', false);
+	}
+
+	if (!$url) {
+		$url = _isotope_val('url', false);
+	}	
+
+	if (!$desc) {
+		$desc = _isotope_val('desc', false);
+	}
+
+	if (!$tid || is_numeric($tid) == false || !$url) {
+		return false;
+	}
+
+	$node = new stdClass();
+	$node = node_object_prepare($node);
+	$node->uid = $uid;
+	$node->type = "suggest";
+	$node->language = 'fa';
+	$node->created =  REQUEST_TIME;
+	$node->title = $url;
+	$node->status = 1;
+	$node->promote = 1;
+	$node->body['und'][0]['summary'] = $desc;
+	$node->body['und'][0]['value'] = $desc;
+	$node->body['und'][0]['format'] = 'filtered_html';
+	$node->field_subject['und'][0]['tid'] = $tid;
+	return  node_save($node);
+}
+
+function isotope_persian_digits($text)
+{
+	$text = (string)$text;
+	$text = str_replace('0', '۰', $text);
+	$text = str_replace('1', '۱', $text);
+	$text = str_replace('2', '۲', $text);
+	$text = str_replace('3', '۳', $text);
+	$text = str_replace('4', '۴', $text);
+	$text = str_replace('5', '۵', $text);
+	$text = str_replace('6', '۶', $text);
+	$text = str_replace('7', '۷', $text);
+	$text = str_replace('8', '۸', $text);
+	$text = str_replace('9', '۹', $text);
+	return $text;
+}
+
+function isotope_stopWords($text) {
+  // Create an array from $text
+  $text_array = explode(" ",$text);
+  $keywords = array();
+  // remove whitespace and lowercase words in $text
+  $text_array = array_map(function($x){ return trim(strtolower($x));}, $text_array);
+
+  foreach ($text_array as $term) {
+	  if(isset($keywords[$term]) == false)
+		  $keywords[$term] = 0;
+      @$keywords[$term] = $keywords[$term] + 1;
+  };
+
+  return array_filter($keywords);
+}

@@ -1,0 +1,379 @@
+<?php
+
+/**
+ * Implements hook_init().
+ */
+function webcrawler_init()
+{
+  set_time_limit ( 0 );
+  $path = drupal_get_path('module', 'webcrawler');
+  drupal_add_js($path . '/js/main.js', array('weight' => 1));
+}
+
+/**
+ * Implements hook_menu().
+ */
+function webcrawler_menu() {
+
+  $items['wbcrawl'] = array(
+    'title' => 'Read Emails',
+    'page callback' => 'webcrawler_read_emails',
+    'page arguments' => array(),
+    'access arguments' => array('access content'),
+  );
+  $items['v/%/%/l'] = array(
+    'title' => 'Load View',
+    'page callback' => 'webcrawler_load_view',
+    'page arguments' => array(1,2),
+    'access arguments' => array('access content'),
+  );  
+  $items['test/%'] = array(
+    'title' => 'TEST',
+    'page callback' => 'webcrawler_test',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+  );  
+  $items['more'] = array(
+    'title' => 'More',
+    'page callback' => 'webcrawler_getMore',
+    'page arguments' => array(),
+    'access arguments' => array('access content'),
+  ); 
+  return $items;
+}
+
+function webcrawler_cron()
+{
+  webcrawler_read_emails(true);
+  dsm('cron in crawler triggred!');
+}
+/*
+ :: FUNCTIONS ::
+*/
+function webcrawler_get_file($url)
+{
+    $result = false;
+    $feed = drupal_http_request($url,array('max_redirects'=>5, 'timeout' => 15));
+    $data = $feed->data;
+    $code = $feed->code;
+    if ($code == 200) {
+      return $data;
+    }
+
+    /*if($feed == '' && $code > 400)
+    {
+      print 'using curl or ...';
+      if (function_exists('curl_init')) {
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, $url);
+        curl_setopt($curl, CURLOPT_HEADER, true);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_BINARYTRANSFER, true);
+        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($curl, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)');
+        $feed = curl_exec($curl);
+        if($feed == false)
+          dsm('Error Code : '.curl_errno($curl));
+        curl_close($curl);
+      }
+      else if (function_exists('file_get_contents')) {
+        $feed = file_get_contents($url); // read
+      }
+      else {
+        $fh = fopen($url, 'r');
+        while(!feof($fh)) {
+          $feed .= fread($fh, 4096); // read
+        } // while(!feof($fh))
+      }
+
+      if ($feed === false)
+        throw new Exception("I'm sorry but there's simply no way how I can load the url...");
+    }*/
+    /* Return data */
+    return $result;
+}
+
+function webcrawler_add_class()
+{
+  $tr_lib_path = function_exists('libraries_get_path') ? libraries_get_path('imap') : 'sites/all/libraries/imap';
+  $tr_platform = $tr_lib_path . '/imap.php';
+  try {
+    if (!class_exists('ImapMailbox') && !@include($tr_platform)) {
+      //show error
+      print '<br />error loading ImapMailbox CLASS';
+      return false;
+    }
+    $mailbox = new ImapMailbox('{imap.gmail.com:993/imap/ssl/novalidate-cert}INBOX', 'itketaab@gmail.com', 'itketaab3140050399', dirname(__FILE__) . '/attachments', 'utf-8');
+    return $mailbox;
+  }
+  catch (Exception $e) {print_r($e);}
+}
+
+function webcrawler_read_emails($skip = false)
+{
+  if ($skip == false){
+    if ($_GET['ushc'] != 'C5XKFDs1HVyB1ViFnh9QP726') {
+      die('Cannot Perform Request');
+    }
+  }
+  $mailbox = webcrawler_add_class();
+  $mails = array();
+  $critica = 'UNSEEN';
+  $start = microtime(true);
+  try {
+    $mailsIds = $mailbox->searchMailBox($critica) or die(imap_errors());
+  }
+  catch(Exception $e) {
+    die($e->getMessage());
+  }
+  if(!$mailsIds) {
+    dsm('Mailbox is empty, Filter : '.$critica);
+    $elapsed_time = microtime(true) - $start;
+    watchdog('wbCrawler', 'EMPTY --- Read EMAILS taked '.$elapsed_time.' Seconds');
+    return false;
+  }
+  $count = 0;
+  //print_r($mailsIds);
+  foreach ($mailsIds as $key => $value) {
+
+    $mailId = $value;
+    
+    $mail = $mailbox->getMail($mailId);
+
+    $nd = webcrawler_get_node_info($mail->textPlain);
+    if($nd)
+    {
+      webcrawler_save_node($nd);
+      $count++;
+    }
+  }
+  $elapsed_time = microtime(true) - $start;
+  watchdog('wbCrawler', 'Read EMAILS taked '.$elapsed_time.' Seconds');
+  dsm($count .' nodes created.');
+  return true;
+}
+
+function webcrawler_save_node($item)
+{
+  if($item['title'] == '' || empty($item['title']))
+    return;
+  $node = new stdClass();
+  $node = node_object_prepare($node);
+  $node->type = "blog_post";
+  $node->uid = 1;
+  $node->language = 'fa';
+  $node->created =  REQUEST_TIME;
+  $node->title = $item['title'];
+  $node->status = 1;
+  $node->promote = 1;
+  $node->body['und'][0]['summary'] = $item['description'];
+  if($item['no_need'] == false)
+    $node->body['und'][0]['value'] = $item['full_body'];
+  else
+    $node->body['und'][0]['value'] = $item['description'];
+  $node->body['und'][0]['format'] = 'filtered_html';
+  $node->field_blog_post_link['und'][0]['value'] = $item['link'];
+  $node->field_post_publish_date['und'][0]['value'] = $item['date'];
+  $img_src = _webcrawler_is_valid_image($item['image'])? $item['image'] : '';
+  $node->field_post_imageurl['und'][0]['value'] = ($img_src != '') ? webcrawler_addhttp($img_src,$item['term']->field_blog_address['und'][0]['value']) : '';
+  $node->field_weblog['und'][0]['tid'] = $item['term']->tid;
+
+  /*fetch image*/
+  if($node->field_post_imageurl['und'][0]['value'])
+  {
+    try {
+      $url = webcrawler_addhttp($node->field_post_imageurl['und'][0]['value'], $item['term']->field_blog_address['und'][0]['value']);
+      $trima__a =  isset($item['term']->field_trimurls['und'][0]['value']) ? $item['term']->field_trimurls['und'][0]['value'] : "";
+      $img_url_1  =  _webcrawler_trimUrl($url, $trima__a);
+      $node->field_post_imageurl['und'][0]['value'] = $img_url_1;
+      $image = webcrawler_get_file($img_url_1);
+      if($image)
+      {
+        $file = file_save_data($image, 'public://postimg/img.jpg', FILE_EXISTS_RENAME);
+        if (is_object($file)) { 
+          $file->status = 1;
+          $file = file_save($file);
+          $node->field_image = array(LANGUAGE_NONE => array('0' => (array)$file));
+        }
+      }
+    }
+    catch(Exception $c)
+    {
+      dsm($c->getMessage());
+    }
+  }
+  node_save($node);
+  dsm("Node <".$node->title."> created! ID = ".$node->nid);
+  $subjID = $item['term']->field_blog_subject['und'][0]['tid'];
+  $subject = taxonomy_term_load($subjID);
+  webcrawler_index_node_subject($node->nid,$subject->tid);
+}
+
+function webcrawler_get_node_info($text)
+{
+  $parts = explode('-$*-', $text);
+  $tid = $parts[count($parts) - 1];
+  $tid = trim(str_replace('tid-', '', trim($tid)));
+  if(is_numeric($tid))
+  {
+    $term = taxonomy_term_load($tid);
+    if($term && $term->name)
+    {
+      $node['title'] = trim($parts[0]);       //0 : Entry Title *
+      $node['link'] = trim($parts[1]);        //1 : Entry Url
+      $node['author'] = trim($parts[2]);      //2 : Entry Author
+      $node['description'] = trim($parts[3]); //3 : Entry Content *
+      $node['image'] = trim($parts[4]);       //4 : Entry ImageUrl
+      $node['date'] = trim($parts[5]);        //5 : Entry Publish Date
+      $node['feed_title'] = trim($parts[6]);  //6 : Feed Title
+      $node['feed_url'] = trim($parts[7]);    //7 : Feed URL = Website address
+      $node['term'] = $term;                  //8 : tid
+
+      if($term->field_need_check['und'][0]['value'] == 1 && !empty($node['link']))
+      {
+        $node = webcrawler_fetch_full_info($term->field_developer_info['und'][0]['value'],$node);
+      }
+      else
+        $node['no_need'] = true;
+
+      return $node;
+    }
+    else
+      return false;
+  }
+  else
+    return false;
+}
+
+function webcrawler_fetch_full_info($reg,&$node)
+{  
+  $reg = (string)$reg;
+  //$reg = html_entity_decode($reg);
+  $result = '';
+  try {
+    $result = webcrawler_get_file($node['link']);
+  } catch (Exception $e) {
+    try {
+      sleep(90);
+      $result = webcrawler_get_file($node['link']);
+    } catch (Exception $ee) {
+      dsm('Cannot Open '.$node['link'].' Reason : '.$ee->getMessage());
+      return $node; 
+    }
+  }
+    
+  if($result)
+  {
+    print_r($reg);
+    $doc = new DOMDocument();
+    $doc->loadHTML($result) or die('ARR');
+
+    $xpath = new DOMXpath($doc);
+    $elements = $xpath->query($reg);
+    $temp_dom = new DOMDocument();
+    foreach($elements as $n) 
+      $temp_dom->appendChild($temp_dom->importNode($n,true));
+    $body = $temp_dom->saveHTML();
+    if($body)
+    {
+      $node['full_body'] = $body;
+      $node['no_need'] = false;
+      if(_webcrawler_is_valid_image($node['image']) == false)
+      {
+        $doc = new DOMDocument();
+        @libxml_use_internal_errors(true);
+        @$doc->loadHTML($body);
+        @libxml_clear_errors();
+        $imageTags = $doc->getElementsByTagName('img');
+
+        foreach($imageTags as $tag) {
+            $node['image'] = $tag->getAttribute('src');
+            break;
+        }
+      }
+    }
+  }
+  else
+    $node['no_need'] = true;
+  return $node;
+}
+
+function _webcrawler_is_valid_image($img_url)
+{
+  return !(empty($img_url) || 
+    $img_url == 'http://ift.tt/eA8V8J' || 
+    $img_url == 'http://ifttt.com/images/no_image_card.png' ||
+    $img_url == 'http://www.salamatnews.com/inc/securimage/securimage_show.php?c=f'
+  );
+}
+
+function _webcrawler_trimUrl($url, $trim = '../')
+{
+  $nurl = str_replace($trim, "", $url);
+  $nurl = str_replace('../', "", $nurl);
+  $nurl = str_replace('.../', "", $nurl);
+  return $nurl;
+}
+
+function webcrawler_test($node){
+  $nid = isset($_GET['nid']) ? $_GET['nid'] : 2201;
+  $node = node_load($nid);
+  // $res = webcrawler_fetch_full_info();
+  $weblog = $node->field_weblog['und'][0]['tid'];
+  $weblog = taxonomy_term_load($weblog);
+  $url  = $weblog->field_blog_address['und'][0]['value'].$node->field_post_imageurl['und'][0]['value'];
+  print _webcrawler_trimUrl($url,$weblog->field_trimurls['und'][0]['value']);
+}
+
+function webcrawler_load_view($view_name,$display_id)
+{
+  global $user;
+  $views = array(
+    '0'=>'main_subjects_page',
+    '1'=>'flag_bookmarks',
+    '2'=>'gishe',
+    '3'=>'timeline'
+  );
+  $view = $views[$view_name];
+  $page = (isset($_GET['page']) and is_numeric($_GET['page']))? $_GET['page'] : 0;
+  switch ($view) {
+    case 'gishe':
+      print isotope_theme_nodes('full',$page,0,$user->uid);
+      break;
+    
+    case 'timeline':
+      print isotope_theme_renews($page,0,$user->uid);
+      break;
+    default:
+      if($page<1)
+        print views_page($view, $display_id);
+      break;
+  }
+}
+
+function dsm($msg)
+{
+  drupal_set_message($msg);
+}
+
+function webcrawler_getMore()
+{
+
+}
+
+function webcrawler_addhttp($url,$base_url) {
+    if (!preg_match("~^(?:f|ht)tps?://~i", $url)) {
+        $url = $base_url . $url;
+    }
+    return $url;
+}
+
+function webcrawler_index_node_subject($nid,$tid)
+{
+  $record = array(
+    'nid' => $nid,
+    'tid' => $tid,
+    'timestamp' => REQUEST_TIME,
+  );
+  db_insert('node_subject_index')->fields($record)->execute();
+}

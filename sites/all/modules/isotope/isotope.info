@@ -1,0 +1,4 @@
+name = Isotope Functions
+description = All multi purpose functions around site
+package = Weblogestan
+core = 7.x

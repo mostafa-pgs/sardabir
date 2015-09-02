@@ -1,0 +1,4 @@
+name = Isotope API
+description = ISOTOPE RESTfull API
+package = Weblogestan
+core = 7.x

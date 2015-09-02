@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="stylesheet" href="css/bootstrap.css" />
+		<script src="js/jquery-1.10.2.js"></script>
+		<script>
+			$('document').ready(function(){
+				var url = 'http://weblogestaan.ir/cron.php?cron_key=IIG0FgktXwUNTPOKiBfzrXi2AAFW9e4HejCC1JbciAg';
+				var seconds = 3 * 60;
+				var tempAll = 0;
+				var x ;
+
+				function init()
+				{
+					openTab();
+					tempAll = seconds;
+					setInterval(checkSecond, 1000);
+				}
+
+				function checkSecond()
+				{
+					seconds--;
+					if (seconds == 0) {
+						window.location.href = window.location.href;
+					} else {
+						var percent = (seconds/tempAll) * 100;
+						$('#second').html(seconds).attr('style','font-size:'+percent+'px');;
+						$('#progress').attr('style','width:'+percent+'%');
+					}
+				}
+
+				function closeTab() {
+					try {
+						x.close();
+					} catch (e) {
+						console.log('cannot close tab!', e);
+					}
+				};
+
+				function openTab() {
+					if (x) {
+						closeTab();
+					};
+					x = window.open(url,'_blank');
+					x.location = url;
+					setTimeout(closeTab, 15000);
+				}
+				init();
+			});
+		</script>
+		<style type="text/css">
+			#second {
+				transition : all 0.4s ease;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="col-md-6">
+	        <h5 id="counter-holder">Refresh in  <span id="second">0</span> second(s) .</h5>
+	        <div class="progress progress-striped active">
+	            <div id="progress" class="progress-bar progress-bar-info" role="progressbar" style="width: 0%;">
+	            </div>
+	        </div>
+	        <br>
+	    </div>
+	</body>
+</html>

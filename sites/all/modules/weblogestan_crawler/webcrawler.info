@@ -1,0 +1,4 @@
+name = Weblogestan Crawler
+description = Crawl a site
+package = Weblogestan
+core = 7.x

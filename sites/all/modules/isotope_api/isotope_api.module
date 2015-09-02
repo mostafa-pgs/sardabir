@@ -1,0 +1,233 @@
+<?php
+
+function isotope_api_menu() {
+
+  $items['REST/get/%'] = array(
+    'title' => 'USER NEWS',
+    'page callback' => 'isotope_api_get',
+    'page arguments' => array(
+    	2,
+    	3,
+    ),
+    'access arguments' => array('access content'),
+  );
+  $items['REST/action/%'] = array(
+    'title' => 'USER NEWS',
+    'page callback' => 'isotope_api_action',
+    'page arguments' => array(
+    	2,
+    	3,
+    ),
+    'access arguments' => array('access content'),
+  );  
+  $items['REST/set/%'] = array(
+    'title' => 'USER NEWS',
+    'page callback' => 'isotope_api_set',
+    'page arguments' => array(
+    	2,
+    	3,
+    ),
+    'access arguments' => array('access content'),
+  );      
+  return $items;
+}
+
+function isotope_api_set($type)
+{
+	global $base_url;
+	$response = array(); $toSend = false;
+	define("I_SUCCESS", 200);
+	define("I_ERROR", 400);
+	$resultCode = '';
+	switch ($type) {
+		case 'user': /* Register User TODO: Check Duplicated Username OR Email */
+			$toSend = isotope_register_user();
+		break;
+
+		case 'update-profile':
+			$toSend = isotope_update_profile();
+		break;	
+		
+		case 'suggest':
+			$toSend = isotope_save_suggest();
+		break;							
+		
+		default:
+			# code...
+			break;
+	}
+	$response = array(
+		'result_code' => $resultCode,
+		'result_type' => gettype($toSend),
+		'result' => $toSend,
+		'total_posts' => 100,
+		'mod' => _isotope_val('uid',false),
+	);
+	if (is_array($toSend)) {
+		$response['result_length'] = count($toSend);
+	}
+	else
+		$response['result_length'] = 0;	
+
+	if ($_GET['r'] == 1) {
+		print_r($response);
+	}
+
+	$json = json_encode(utf8ize($response));
+	print $json;
+}
+
+function isotope_api_action($type)
+{
+	global $base_url;
+	$response = array(); $toSend = false;
+	define("I_SUCCESS", 200);
+	define("I_ERROR", 400);
+	$resultCode = '';
+	switch ($type) {
+		case 'user_login':
+			$toSend = isotope_login_user();
+		break;
+
+		case 'resetpswd':
+			$toSend = isotope_reset_password();
+			break;
+
+		case 'follow': /* ms */
+		case 'friend': /* friend */
+			$toSend = isotope_toggle_follow();
+			break;	
+
+		case 'like': /* bookmarks */
+		case 'repost': /* renews */
+			$toSend = isotope_toggle_like();
+			break;									
+		
+		default:
+			# code...
+			break;
+	}
+	$response = array(
+		'result_code' => $resultCode,
+		'result' => $toSend,
+		'result_type' => gettype($toSend),
+		'total_posts' => 100,
+		'mod' => _isotope_val('uid',false),
+	);
+	if (is_array($toSend)) {
+		$response['result_length'] = count($toSend);
+	}
+	else
+		$response['result_length'] = 0;	
+
+	if ($_GET['r'] == 1) {
+		print_r($response);
+	}
+
+	$json = json_encode(utf8ize($response));
+	print $json;
+}
+
+function isotope_api_get($type,$page)
+{
+	global $base_url;
+	$response = array(); $toSend = false;
+	define("I_SUCCESS", 200);
+	define("I_ERROR", 400);
+	$resultCode = '';
+	$start = microtime(true);
+	switch ($type) {
+		case 'feed':
+		case 'salam':
+			$toSend = isotope_get_feed();
+			$resultCode = I_SUCCESS;
+		break;
+
+		case 'guest_of_honor':
+			$toSend = isotope_get_guest_posts();
+			$resultCode = I_SUCCESS;
+		break;	
+
+		case 'post':
+			$toSend = isotope_get_post();
+			$resultCode = I_SUCCESS;
+		break;				
+
+		case 'subject_all' : /* ALL CATEGORIES */
+			$toSend = isotope_get_all_subjects();
+			$resultCode = I_SUCCESS;
+			break;
+
+		case 'available' :
+			$toSend = isotope_check_user_email();
+			$resultCode = I_SUCCESS;
+		break;
+
+		case 'profile':
+			$toSend = isotope_get_user_profile();
+			$resultCode = I_SUCCESS;
+		break;	
+
+		case 'user-posts':
+			$toSend = isotope_get_user_posts();
+			$resultCode = I_SUCCESS;
+		break;	
+
+		case 'user-followers':
+			$toSend = isotope_get_user_followers();
+			$resultCode = I_SUCCESS;
+		break;
+
+		case 'user-following':
+			$toSend = isotope_get_user_followings();
+			$resultCode = I_SUCCESS;
+		break;	
+
+		case 'crypt':
+			$toSend = isotope_crypt();
+			$resultCode = I_SUCCESS;
+		break;									
+		
+		default:
+			# code...
+			break;
+	}
+	$time_elapsed_secs = microtime(true) - $start;
+	$response = array(
+		'result_code' => $resultCode,
+		'result_type' => gettype($toSend),		
+		'result' => $toSend,
+		'total_posts' => 100,
+		'mod' => _isotope_val('uid',false),
+		'execution_time' => $time_elapsed_secs,
+	);
+
+	if (is_numeric($response['mod'])) {
+		$response['user'] = _isotope_profile(user_load($response['mod']));
+	}
+
+	if (is_array($toSend)) {
+		$response['result_length'] = count($toSend);
+	}
+	else
+		$response['result_length'] = 0;	
+
+	if (isset($_GET['r']) && $_GET['r'] == 1) {
+		print_r($response);
+	}
+	// var_dump($response);
+	$json = json_encode(utf8ize($response));
+	print $json;
+}
+
+function utf8ize($d) {
+	return $d;
+    if (is_array($d)) {
+        foreach ($d as $k => $v) {
+            $d[$k] = utf8ize($v);
+        }
+    } else if (is_string ($d)) {
+        return utf8_encode($d);
+    }
+    return $d;
+}
